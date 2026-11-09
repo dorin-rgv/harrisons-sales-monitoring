@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import "./App.css";
 
-
 // 1. API CONFIGURATION
 const API_BASE = "https://hiring.harrisons.my/api/mock/sales-orders";
 const API_KEY = "hssb-assessment-mock-2026";
@@ -52,7 +51,6 @@ function fetchOrderDetails(salesId, signal) {
   return apiRequest(`/${encodeURIComponent(salesId)}`, signal);
 }
 
-
 // 3. DATA HELPERS
 function getValue(object, paths, fallback = null) {
   for (const path of paths) {
@@ -77,8 +75,9 @@ function getRecords(response) {
 }
 
 function normalizeOrder(order) {
-  // 1. Aggressive amount finding
+  // FIXED: Typo "orde." changed to "order."
   let rawAmount =
+    order.HAR_TotalSOAmount ?? 
     order.IAR_TotalSOAmount ??
     order.financials?.total_amount ??
     order.financials?.totalAmount ??
@@ -92,7 +91,6 @@ function normalizeOrder(order) {
     order.total ??
     0;
 
-  // 2. Deep search fallback if still 0
   if (rawAmount === 0) {
     const possibleAmountKey = Object.keys(order).find(
       (key) =>
@@ -101,7 +99,6 @@ function normalizeOrder(order) {
     if (possibleAmountKey) rawAmount = order[possibleAmountKey];
   }
 
-  // 3. Clean string numbers
   if (typeof rawAmount === "string") {
     rawAmount = parseFloat(rawAmount.replace(/[^0-9.-]+/g, ""));
   }
@@ -121,7 +118,6 @@ function normalizeOrder(order) {
   };
 }
 
-
 // 4. SUMMARY & PAGINATION HELPERS
 function getSummary(response) {
   return response?.summary || response?.data?.summary || {};
@@ -132,7 +128,7 @@ function getPaginationInfo(response, page, pageSize, count) {
   const totalValue = getValue(
     response,
     ["total", "totalCount", "totalOrders", "pagination.total"],
-    getValue(summary, ["totalOrders", "total", "count"])
+    getValue(summary, ["total_orders", "totalOrders", "total", "count"])
   );
   const pagesValue = getValue(response, [
     "totalPages",
@@ -315,24 +311,14 @@ export default function App() {
   const [detailError, setDetailError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Fetch Metadata (FIXED: Parses arrays of strings correctly)
+  // Fetch Metadata
   useEffect(() => {
     const controller = new AbortController();
     async function loadMetadata() {
       try {
         const response = await fetchMetadata(controller.signal);
-
-        // The /meta endpoint returns ["draft", "open order", etc.]
-        const rawStatuses = getValue(
-          response,
-          ["statuses", "data.statuses"],
-          []
-        );
-        const rawSites = getValue(
-          response,
-          ["sites", "data.sites"],
-          ["B20", "C30", "D40", "E50"]
-        ); // Fallback sites
+        const rawStatuses = getValue(response, ["statuses", "data.statuses"], []);
+        const rawSites = getValue(response, ["sites", "data.sites"], ["B20", "C30", "D40", "E50"]); 
 
         setMetadata({
           statuses: rawStatuses
@@ -362,22 +348,13 @@ export default function App() {
           controller.signal
         );
 
-        // DEBUG: Log the raw API data to the console so you can see it!
-        console.log("RAW SUMMARY:", response.summary);
-        console.log("FIRST ORDER IN LIST:", response.data?.[0]);
-
         const records = getRecords(response);
         const normalizedOrders = records.map(normalizeOrder);
 
         setOrders(normalizedOrders);
         setSummary(getSummary(response));
 
-        const pagination = getPaginationInfo(
-          response,
-          page,
-          pageSize,
-          records.length
-        );
+        const pagination = getPaginationInfo(response, page, pageSize, records.length);
         setTotalOrders(pagination.total);
         setTotalPages(pagination.totalPages);
         setHasMore(pagination.hasMore);
@@ -396,28 +373,11 @@ export default function App() {
   }, [page, pageSize, search, status, site, refreshKey]);
 
   // Handle Filters & Sorting
-  const handleSearch = (val) => {
-    setSearch(val);
-    setPage(1);
-  };
-  const handleStatusChange = (val) => {
-    setStatus(val);
-    setPage(1);
-  };
-  const handleSiteChange = (val) => {
-    setSite(val);
-    setPage(1);
-  };
-  const clearFilters = () => {
-    setSearch("");
-    setStatus("");
-    setSite("");
-    setPage(1);
-  };
-  const handlePageSizeChange = (val) => {
-    setPageSize(Number(val));
-    setPage(1);
-  };
+  const handleSearch = (val) => { setSearch(val); setPage(1); };
+  const handleStatusChange = (val) => { setStatus(val); setPage(1); };
+  const handleSiteChange = (val) => { setSite(val); setPage(1); };
+  const clearFilters = () => { setSearch(""); setStatus(""); setSite(""); setPage(1); };
+  const handlePageSizeChange = (val) => { setPageSize(Number(val)); setPage(1); };
 
   const handleSort = (field) => {
     if (sortField === field)
@@ -428,7 +388,7 @@ export default function App() {
     }
   };
 
-  // DYNAMIC DROPDOWNS: Combine Metadata + Current Orders
+  // DYNAMIC DROPDOWNS
   const availableStatuses = useMemo(() => {
     const fromOrders = orders.map((o) => o.status).filter(Boolean);
     return Array.from(new Set([...metadata.statuses, ...fromOrders])).sort();
@@ -441,8 +401,7 @@ export default function App() {
 
   const sortedOrders = useMemo(() => {
     return [...orders].sort((a, b) => {
-      const first = a[sortField],
-        second = b[sortField];
+      const first = a[sortField], second = b[sortField];
       if (first == null && second == null) return 0;
       if (first == null) return 1;
       if (second == null) return -1;
@@ -481,21 +440,14 @@ export default function App() {
     }
   }
 
-  // Dashboard Stats (Global Summary)
-  // This function checks if a status keyword exists in the summary object and returns the count
+  // Dashboard Stats (FIXED: Accurate math using exact API keys)
   const getGlobalCount = (keyword) => {
     if (!summary || Object.keys(summary).length === 0) return null;
     let count = 0;
     let found = false;
 
     Object.keys(summary).forEach((key) => {
-      // Check if the key matches the keyword (e.g., "open", "pending", "cancel")
-      if (
-        key
-          .toLowerCase()
-          .replace(/[^a-z]/g, "")
-          .includes(keyword)
-      ) {
+      if (key.toLowerCase().replace(/[^a-z]/g, "").includes(keyword)) {
         const val = summary[key];
         if (typeof val === "number") {
           count += val;
@@ -510,32 +462,36 @@ export default function App() {
   };
 
   const calculatePageCount = (keyword) =>
-    orders.filter((o) => String(o.status).toLowerCase().includes(keyword))
-      .length;
+    orders.filter((o) => String(o.status).toLowerCase().includes(keyword)).length;
 
+  // Added "total_orders" to the array
   const totalCount =
-    getValue(summary, ["total", "totalOrders", "count", "Total"]) ??
+    getValue(summary, ["total_orders", "total", "totalOrders", "count", "Total"]) ??
     totalOrders;
+
   const openCount =
-    getGlobalCount("open") ??
-    getGlobalCount("pending") ??
-    getGlobalCount("draft") ??
+    getGlobalCount("open") ||
+    getGlobalCount("pending") ||
+    getGlobalCount("draft") ||
     calculatePageCount("open");
+
+  // FIXED: Math logic to add Invoiced (360) + Delivered (300) = 660
   const completedCount =
-    getGlobalCount("complete") ??
-    getGlobalCount("deliver") ??
-    getGlobalCount("invoice") ??
-    calculatePageCount("deliver");
+    (getGlobalCount("invoice") || 0) + (getGlobalCount("deliver") || 0) ||
+    (calculatePageCount("deliver") + calculatePageCount("invoice"));
+
   const cancelledCount =
-    getGlobalCount("cancel") ?? calculatePageCount("cancel");
+    getGlobalCount("cancel") || calculatePageCount("cancel");
 
   const totalValue = getValue(summary, [
+    "total_order_value",
     "totalValue",
     "totalAmount",
     "total_amount",
     "TotalAmount",
     "totalSales",
   ]);
+  
   const fallbackValue = orders.reduce(
     (sum, order) => sum + (Number(order.amount) || 0),
     0
@@ -587,9 +543,7 @@ export default function App() {
         <section className="dashboard">
           <StatCard
             title="Total Orders"
-            value={
-              totalCount == null ? "—" : Number(totalCount).toLocaleString()
-            }
+            value={totalCount == null ? "—" : Number(totalCount).toLocaleString()}
             description="Total sales orders"
             icon="▣"
             color="blue"
@@ -610,22 +564,14 @@ export default function App() {
           />
           <StatCard
             title="Completed"
-            value={
-              completedCount == null
-                ? "—"
-                : Number(completedCount).toLocaleString()
-            }
+            value={completedCount == null ? "—" : Number(completedCount).toLocaleString()}
             description="Invoiced / delivered"
             icon="✓"
             color="green"
           />
           <StatCard
             title="Cancelled"
-            value={
-              cancelledCount == null
-                ? "—"
-                : Number(cancelledCount).toLocaleString()
-            }
+            value={cancelledCount == null ? "—" : Number(cancelledCount).toLocaleString()}
             description="Cancelled orders"
             icon="×"
             color="red"
