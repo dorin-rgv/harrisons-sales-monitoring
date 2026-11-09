@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import "./App.css";
 
-// =====================================================
 // 1. API CONFIGURATION
-// =====================================================
 const API_BASE = "https://hiring.harrisons.my/api/mock/sales-orders";
 const API_KEY = "hssb-assessment-mock-2026";
 
@@ -14,9 +12,7 @@ const PAGE_SIZE_OPTIONS = [
   { value: 100, label: "100 (Max/All)" },
 ];
 
-// =====================================================
 // 2. API SERVICE
-// =====================================================
 async function apiRequest(endpoint, signal) {
   const response = await fetch(`${API_BASE}${endpoint}`, {
     method: "GET",
@@ -54,9 +50,7 @@ function fetchOrderDetails(salesId, signal) {
   return apiRequest(`/${encodeURIComponent(salesId)}`, signal);
 }
 
-// =====================================================
 // 3. DATA HELPERS
-// =====================================================
 function getValue(object, paths, fallback = null) {
   for (const path of paths) {
     const value = path
@@ -122,9 +116,7 @@ function normalizeOrder(order) {
   };
 }
 
-// =====================================================
 // 4. SUMMARY & PAGINATION HELPERS
-// =====================================================
 function getSummary(response) {
   return response?.summary || response?.data?.summary || {};
 }
@@ -159,9 +151,7 @@ function getPaginationInfo(response, page, pageSize, count) {
   };
 }
 
-// =====================================================
 // 5. FORMATTING HELPERS
-// =====================================================
 function formatCurrency(value) {
   if (value == null || !Number.isFinite(Number(value))) return "—";
   return new Intl.NumberFormat("en-MY", {
@@ -202,9 +192,7 @@ function getStatusClass(status) {
   return "status-default";
 }
 
-// =====================================================
 // 6. COMPONENTS
-// =====================================================
 function StatCard({ title, value, icon, color, description }) {
   return (
     <div className="card">
@@ -293,9 +281,7 @@ function OrderDetails({ order, onClose }) {
   );
 }
 
-// =====================================================
 // 7. MAIN APPLICATION
-// =====================================================
 export default function App() {
   const [orders, setOrders] = useState([]);
   const [summary, setSummary] = useState({});
