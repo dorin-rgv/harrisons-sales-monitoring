@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 import "./App.css";
 
+// =====================================================
 // 1. API CONFIGURATION
+// =====================================================
 const API_BASE = "https://hiring.harrisons.my/api/mock/sales-orders";
 const API_KEY = "hssb-assessment-mock-2026";
 
@@ -12,8 +14,9 @@ const PAGE_SIZE_OPTIONS = [
   { value: 100, label: "100 (Max/All)" },
 ];
 
-
+// =====================================================
 // 2. API SERVICE
+// =====================================================
 async function apiRequest(endpoint, signal) {
   const response = await fetch(`${API_BASE}${endpoint}`, {
     method: "GET",
@@ -51,7 +54,9 @@ function fetchOrderDetails(salesId, signal) {
   return apiRequest(`/${encodeURIComponent(salesId)}`, signal);
 }
 
+// =====================================================
 // 3. DATA HELPERS
+// =====================================================
 function getValue(object, paths, fallback = null) {
   for (const path of paths) {
     const value = path
@@ -75,9 +80,8 @@ function getRecords(response) {
 }
 
 function normalizeOrder(order) {
-  // FIXED: Typo "orde." changed to "order."
   let rawAmount =
-    order.HAR_TotalSOAmount ?? 
+    order.HAR_TotalSOAmount ??
     order.IAR_TotalSOAmount ??
     order.financials?.total_amount ??
     order.financials?.totalAmount ??
@@ -118,7 +122,9 @@ function normalizeOrder(order) {
   };
 }
 
+// =====================================================
 // 4. SUMMARY & PAGINATION HELPERS
+// =====================================================
 function getSummary(response) {
   return response?.summary || response?.data?.summary || {};
 }
@@ -153,7 +159,9 @@ function getPaginationInfo(response, page, pageSize, count) {
   };
 }
 
+// =====================================================
 // 5. FORMATTING HELPERS
+// =====================================================
 function formatCurrency(value) {
   if (value == null || !Number.isFinite(Number(value))) return "—";
   return new Intl.NumberFormat("en-MY", {
@@ -194,7 +202,9 @@ function getStatusClass(status) {
   return "status-default";
 }
 
+// =====================================================
 // 6. COMPONENTS
+// =====================================================
 function StatCard({ title, value, icon, color, description }) {
   return (
     <div className="card">
@@ -283,7 +293,9 @@ function OrderDetails({ order, onClose }) {
   );
 }
 
+// =====================================================
 // 7. MAIN APPLICATION
+// =====================================================
 export default function App() {
   const [orders, setOrders] = useState([]);
   const [summary, setSummary] = useState({});
@@ -421,6 +433,9 @@ export default function App() {
     });
   }, [orders, sortField, sortOrder]);
 
+  // Calculate the total amount of the currently visible orders
+  const pageTotalAmount = sortedOrders.reduce((sum, order) => sum + (Number(order.amount) || 0), 0);
+
   // Fetch Single Order Details
   async function handleViewOrder(salesId) {
     if (!salesId) return setDetailError("Invalid Order ID.");
@@ -440,7 +455,7 @@ export default function App() {
     }
   }
 
-  // Dashboard Stats (FIXED: Accurate math using exact API keys)
+  // Dashboard Stats (Accurate math using exact API keys)
   const getGlobalCount = (keyword) => {
     if (!summary || Object.keys(summary).length === 0) return null;
     let count = 0;
@@ -464,7 +479,6 @@ export default function App() {
   const calculatePageCount = (keyword) =>
     orders.filter((o) => String(o.status).toLowerCase().includes(keyword)).length;
 
-  // Added "total_orders" to the array
   const totalCount =
     getValue(summary, ["total_orders", "total", "totalOrders", "count", "Total"]) ??
     totalOrders;
@@ -475,7 +489,6 @@ export default function App() {
     getGlobalCount("draft") ||
     calculatePageCount("open");
 
-  // FIXED: Math logic to add Invoiced (360) + Delivered (300) = 660
   const completedCount =
     (getGlobalCount("invoice") || 0) + (getGlobalCount("deliver") || 0) ||
     (calculatePageCount("deliver") + calculatePageCount("invoice"));
@@ -722,6 +735,22 @@ export default function App() {
                   ))
                 )}
               </tbody>
+
+              {/* NEW: Dynamic Table Footer for Aggregation */}
+              {!loading && !error && sortedOrders.length > 0 && (
+                <tfoot>
+                  <tr style={{ backgroundColor: "#f8fafc", fontWeight: "bold" }}>
+                    <td colSpan="5" style={{ textAlign: "right", padding: "16px" }}>
+                      Total Value (Current View):
+                    </td>
+                    <td className="amount-column" style={{ color: "#0f172a" }}>
+                      {formatCurrency(pageTotalAmount)}
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              )}
+
             </table>
           </div>
 
