@@ -131,10 +131,12 @@ button:disabled {
 }
 .stat-value {
   color: #173b35;
-  font-size: 25px;
+  font-size: 22px;
   font-weight: 750;
   margin: 12px 0 8px;
+  white-space: nowrap;
   overflow-wrap: anywhere;
+  text-overflow: ellipsis;
 }
 .stat-description {
   font-size: 11px;
