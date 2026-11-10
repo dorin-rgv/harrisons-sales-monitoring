@@ -1,7 +1,7 @@
 # Harrisons Sales Order Monitoring
 
 ## Live Demo
-🔗 [https://harrisons-sales-monitoring-bzvv.vercel.app/](https://harrisons-sales-monitoring-bzvv.vercel.app/)
+🔗https://harrisons-sales-monitoring-bzwg.vercel.app/ 
 
 ## Overview
 A responsive React.js web application built for the Harrisons Sabah IT Executive Assessment. It helps a sales team monitor 1,200 sales orders across multiple branches using a mock REST API.
