@@ -29,7 +29,14 @@ A responsive React.js web application built for the Harrisons Sabah IT Executive
 - Verification: I manually inspected the live API JSON to correct AI hallucinations regarding JSON key names. I rewrote the data parsing logic to ensure accurate amounts.
 - Testing: I tested the Error state by blocking the API request in Chrome DevTools, the Empty state by searching for non-existent IDs, and the Loading state by throttling the network. I also manually verified pagination, sorting, and modal data integrity.
 
+## Known Limitations & Future Enhancements
+Following the assessment guidelines to prioritize a reliable, functional solution within the recommended scope, the following are intentional trade-offs and future enhancement opportunities:
+- No Client-Side Caching: Navigating between pages triggers a new network request. In production, I would implement React Query or SWR for caching.
+- Automated Testing: While manually tested extensively, automated unit tests (Jest) for the data normalization and API wrappers were deferred.
+- Advanced Filtering: The API supports `date_range`, `min_total`, and `max_total`. Implementing UI controls for these would be the next step.
+- Data Visualization: A line graph tracking monthly sales per branch would be a great feature, but was deferred to prioritize core table stability.
+
 ## Run Locally
-1. Clone the repo: 
+1. Clone the repository:
    ```bash
    git clone https://github.com/dorin-rgv/harrisons-sales-monitoring.git
